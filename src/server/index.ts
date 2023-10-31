@@ -17,10 +17,13 @@ interface ChatMessage {
   username: string;
 }
 
+const users: Record<string, JoinRoomData> = {};
+
 io.on('connection', (socket) => {
-  console.log('a user connected');
+  console.log('a user connected:', socket.id);
 
   socket.on('join', ({ room, username }: JoinRoomData) => {
+    users[socket.id] = { username, room };
     socket.join(room);
     console.log(`${username} joined room: ${room}`);
     socket.to(room).emit('message', { username: 'Admin', message: `${username} has joined the room.` });
@@ -32,7 +35,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('user disconnected');
+    const user = users[socket.id];
+    if (user) {
+      const { username, room } = user;
+      socket.to(room).emit('message', { username: 'System', message: `${username} has left the chat.` });
+      console.log(`${username} has disconnected`);
+      delete users[socket.id];
+    }
   });
 });
 
