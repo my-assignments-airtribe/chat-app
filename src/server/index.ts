@@ -104,6 +104,12 @@ io.on("connection", (socket) => {
         fromUsername: users[socket.id].username, // Sender's username for display purposes
         timestamp,
       });
+      io.to(socket.id).emit("private message", {
+        content,
+        fromUserId: users[socket.id].userId, // Sender's user ID
+        fromUsername: users[socket.id].username, // Sender's username for display purposes
+        timestamp,
+      });
     }
   });
 

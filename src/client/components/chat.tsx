@@ -211,9 +211,21 @@ const Chat: React.FC<ChatProps> = ({
                 </div>
               );
             }
-            if ("fromUsername" in combined.message) {
+            if ("fromUsername" in combined.message && combined.message.fromUserId === userId) {
               return (
-                <div className="private message-bubble" key={index}>
+                <div className="current-user private message-bubble" key={index}>
+                  <span>{combined.message.content}</span>
+                  <span className="small">
+                    {DateTime.fromISO(combined.message.timestamp).toFormat(
+                      "HH:mm"
+                    )}
+                  </span>
+                </div>
+              );
+            }
+            if ("fromUsername" in combined.message && combined.message.fromUserId !== userId) {
+              return (
+                <div className="other-user private message-bubble" key={index}>
                   <strong>
                     Private Message from: {combined.message.fromUsername}{" "}
                   </strong>

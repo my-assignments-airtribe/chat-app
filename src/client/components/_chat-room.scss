@@ -163,6 +163,19 @@
         }
         &.private {
           background: #d0ae60;
+          &.current-user {
+            &:after {
+              right: -2px;
+              top: auto;
+              bottom: 10px;
+              left: auto;
+              border-top-color: #d0ae60;
+              border-bottom: 0;
+              border-right: 0;
+              margin-bottom: -8px;
+              transform: rotate(51deg);
+            }
+          }
           &:after {
             right: auto;
             bottom: auto;
@@ -212,6 +225,9 @@
       &::placeholder {
         color: #d6d6d6;
       }
+    }
+    input[type="file"] {
+      max-width: 210px;
     }
     button {
       padding: 8px;
