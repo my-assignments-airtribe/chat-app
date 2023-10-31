@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import socket from "./socket";
 import { debounce } from "lodash";
 import { Message, PrivateMessage, User } from "./chat-room";
+import {DateTime} from 'luxon';
 
 interface ChatProps {
   room: string;
@@ -13,6 +14,10 @@ interface ChatProps {
   userId: string;
 }
 
+interface CombinedMessageProps {
+  message: Message | PrivateMessage;
+}
+
 const Chat: React.FC<ChatProps> = ({
   room,
   onlineUsers,
@@ -20,14 +25,19 @@ const Chat: React.FC<ChatProps> = ({
   username,
   handleLeaveRoom,
   privateMessages,
-  userId
+  userId,
 }) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [recipientId, setRecipientId] = useState<string>("");
 
   const sendMessage = useCallback(() => {
     if (currentMessage.trim()) {
-      socket.emit("message", { room, message: currentMessage, username, userId });
+      socket.emit("message", {
+        room,
+        message: currentMessage,
+        username,
+        userId,
+      });
       setCurrentMessage("");
     }
   }, [currentMessage, room, username]);
@@ -37,36 +47,53 @@ const Chat: React.FC<ChatProps> = ({
       if (event.key === "Enter") {
         sendMessage();
       }
-    }), [sendMessage]
+    }),
+    [sendMessage]
   );
 
-  const sendPrivateMessage = useCallback((content: string) => {
-    if (content.trim() && recipientId.trim()) {
-      socket.emit("private message", { content, recipientId });
-      setCurrentMessage("");
-    }
-  }, [recipientId]);
+  const sendPrivateMessage = useCallback(
+    (content: string) => {
+      if (content.trim() && recipientId.trim()) {
+        socket.emit("private message", { content, recipientId });
+        setCurrentMessage("");
+      }
+    },
+    [recipientId]
+  );
 
   const handleKeyDownPrivateMessage = useCallback(
     debounce((event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === "Enter") {
         sendPrivateMessage(currentMessage);
       }
-    }), [currentMessage, sendPrivateMessage]
+    }),
+    [currentMessage, sendPrivateMessage]
   );
 
-  
+  // const messageBubbleClassNames = useCallback(
+  //   (message: Message) => {
+  //     if (message.username === "Admin") {
+  //       return "admin-user message-bubble";
+  //     }
+  //     if (username === message.username && message.socketId === userId) {
+  //       return `current-user message-bubble`;
+  //     } else {
+  //       return `other-user message-bubble`;
+  //     }
+  //   },
+  //   [username, userId]
+  // );
 
-  const messageBubbleClassNames = (message: Message) => {
-    if (message.username === "Admin") {
-      return "admin-user message-bubble";
+  const combinedMessages: CombinedMessageProps[] = [
+    ...messages.map((message) => ({ message })),
+    ...privateMessages.map((message) => ({ message })),
+  ].sort((a, b) => {
+    if ("timestamp" in a.message && "timestamp" in b.message) {
+      return new Date(a.message.timestamp).getTime() - new Date(b.message.timestamp).getTime();
     }
-    if (username === message.username && message.socketId === socket.id) {
-      return `current-user message-bubble`;
-    } else {
-      return `other-user message-bubble`;
-    }
-  };
+    return 0;
+  })
+  
   return (
     <div className="chat-container">
       <div className="heading">
@@ -77,35 +104,62 @@ const Chat: React.FC<ChatProps> = ({
         <div className="left">
           <h3>Online Users</h3>
           <ul>
-            {onlineUsers.map((user, index) => (
+            {onlineUsers.map((user) => (
               <li
-                onClick={() => user.userId !== userId && setRecipientId(user.userId)}
-                key={index}
+                className={recipientId === user.userId ? "selected-private-message" : ""}
+                onClick={() =>
+                  recipientId
+                    ? setRecipientId("")
+                    : user.userId !== userId && setRecipientId(user.userId)
+                }
+                key={user.userId} // Use a unique identifier as the key
               >
-                {user.username}
+                {recipientId === user.userId ? 'Messaging Private : ' : '' }{user.username}
               </li>
             ))}
           </ul>
         </div>
         <div className="chat-messages">
-          {messages.map((message, index) => (
-            <div className={messageBubbleClassNames(message)} key={index}>
-              {message.socketId !== socket.id ? (
-                <strong>{message.username} </strong>
-              ) : (
-                <></>
-              )}
-              <span>{message.message}</span>
-            </div>
-          ))}
           {
-            privateMessages.map((message, index) => (
-              <div className="private message-bubble" key={index}>
-                <strong>Private Message from: {message.fromUsername}  </strong>
-                <span>{message.content}</span>
-              </div>
-            ))
-          }
+            combinedMessages.map((combined, index) => {
+              if ("username" in combined.message && combined.message.username === "Admin") {
+                return (
+                  <div className="admin-user message-bubble" key={index}>
+                    <strong>{combined.message.username} </strong>
+                    <span>{combined.message.message}</span>
+                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
+                  </div>
+                );
+              }
+              if ("username" in combined.message && username === combined.message.username && combined.message.userId === userId) {
+                return (
+                  <div className={`current-user message-bubble`} key={index}>
+                    <strong>{combined.message.username} </strong>
+                    <span>{combined.message.message}</span>
+                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
+                  </div>
+                );
+              }
+              if ("username" in combined.message && username !== combined.message.username && combined.message.userId !== userId) {
+                return (
+                  <div className={`other-user message-bubble`} key={index}>
+                    <strong>{combined.message.username} </strong>
+                    <span>{combined.message.message}</span>
+                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
+                  </div>
+                );
+              }
+              if ("fromUsername" in combined.message) {
+                return (
+                  <div className="private message-bubble" key={index}>
+                    <strong>Private Message from: {combined.message.fromUsername} </strong>
+                    <span>{combined.message.content}</span>
+                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
+                  </div>
+                );
+              }
+            }
+          )}
         </div>
       </div>
       {recipientId ? (

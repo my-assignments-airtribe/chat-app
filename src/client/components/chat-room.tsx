@@ -6,13 +6,15 @@ import Chat from "./chat";
 export interface Message {
   username: string;
   message: string;
-  socketId: string;
+  userId: string;
+  timestamp: string;
 }
 
 export interface PrivateMessage {
   content: string;
   fromUserId: string;
   fromUsername: string;
+  timestamp: string;
 }
 
 export interface User {

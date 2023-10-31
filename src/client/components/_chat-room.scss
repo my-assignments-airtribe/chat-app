@@ -29,12 +29,14 @@
   }
   .body {
     height: calc(100% - 104px - 61px);
-    background: red;
     background: var(--chat-background);
     display: flex;
     .left {
       min-width: 250px;
       background: #292f47;
+      .selected-private-message {
+        background: #5b93fe;
+      }
       h3 {
         padding: 1rem;
         color: var(--secondary);
@@ -70,6 +72,7 @@
       flex-direction: column;
       overflow-y: auto;
       .message-bubble {
+        min-width: 70px;
         padding: 0.5rem 1rem;
         border-radius: 4px;
         background: #25405f;
@@ -147,6 +150,12 @@
           &::after {
             content: none;
           }
+        }
+        .small {
+          align-self: self-end;
+          font-size: 12px;
+          margin-top: 8px;
+          font-weight: 500;
         }
       }
     }

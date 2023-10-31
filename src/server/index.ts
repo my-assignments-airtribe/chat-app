@@ -18,6 +18,7 @@ interface ChatMessage {
   message: string;
   username: string;
   userId: string;
+  timestamp: string;
 }
 
 const users: Record<string, JoinRoomData> = {};
@@ -45,17 +46,20 @@ io.on("connection", (socket) => {
     socket.to(room).emit("message", {
       username: "Admin",
       message: `${username} has joined the room.`,
+      timestamp: new Date().toISOString()
     });
     io.in(room).emit("roomData", { room, users: getUsersInRoom(room) });
   });
 
   socket.on("message", ({ room, message, username, userId }: ChatMessage) => {
-    io.to(room).emit("message", { username, message, userId });
+    const timestamp = new Date().toISOString();
+    io.to(room).emit("message", { username, message, userId, timestamp });
     console.log(`Message from ${username} in room ${room}: ${message}`);
   });
 
   socket.on("private message", ({ content, recipientId }) => {
     console.log("private message", content, recipientId, users);
+    const timestamp = new Date().toISOString();
 
     // Find the socket ID of the recipient based on their unique user ID
     const recipientSocketId = Object.keys(users).find(
@@ -70,6 +74,7 @@ io.on("connection", (socket) => {
         content,
         fromUserId: users[socket.id].userId, // Sender's user ID
         fromUsername: users[socket.id].username, // Sender's username for display purposes
+        timestamp,
       });
     }
   });
@@ -77,9 +82,11 @@ io.on("connection", (socket) => {
   socket.on("leave", ({ room, username }: JoinRoomData) => {
     socket.leave(room);
     console.log(`${username} left room: ${room}`);
+    const timestamp = new Date().toISOString();
     socket.to(room).emit("message", {
       username: "Admin",
       message: `${username} has left the room.`,
+      timestamp
     });
     delete users[socket.id];
     io.in(room).emit("roomData", { room, users: getUsersInRoom(room) });
@@ -89,9 +96,11 @@ io.on("connection", (socket) => {
     const user = users[socket.id];
     if (user) {
       const { username, room } = user;
+      const timestamp = new Date().toISOString();
       socket.to(room).emit("message", {
         username: "Admin",
         message: `${username} has left the chat.`,
+        timestamp
       });
       console.log(`${username} has disconnected`);
       delete users[socket.id];
