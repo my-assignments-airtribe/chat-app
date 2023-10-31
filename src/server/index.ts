@@ -81,6 +81,7 @@ io.on("connection", (socket) => {
       username: "Admin",
       message: `${username} has left the room.`,
     });
+    delete users[socket.id];
     io.in(room).emit("roomData", { room, users: getUsersInRoom(room) });
   });
 
