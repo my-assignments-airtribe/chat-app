@@ -1,10 +1,10 @@
 import React from 'react';
 import ChatRoom from './components/chat-room';
+import './App.scss';
 
 const App: React.FC = () => {
   return (
     <div>
-      <h1>Real-time Chat App</h1>
       <ChatRoom />
     </div>
   );
