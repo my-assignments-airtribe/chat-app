@@ -19,6 +19,10 @@ interface ChatMessage {
 
 const users: Record<string, JoinRoomData> = {};
 
+const getUsersInRoom = (room: string): JoinRoomData[] => {
+  return Object.values(users).filter(user => user.room === room);
+};
+
 io.on('connection', (socket) => {
   console.log('a user connected:', socket.id);
 
@@ -26,6 +30,8 @@ io.on('connection', (socket) => {
     users[socket.id] = { username, room };
     socket.join(room);
     console.log(`${username} joined room: ${room}`);
+    const usersInRoom = getUsersInRoom(room);
+    io.to(room).emit('roomData', { room, users: usersInRoom });
     socket.to(room).emit('message', { username: 'Admin', message: `${username} has joined the room.` });
   });
 
@@ -41,6 +47,8 @@ io.on('connection', (socket) => {
       socket.to(room).emit('message', { username: 'System', message: `${username} has left the chat.` });
       console.log(`${username} has disconnected`);
       delete users[socket.id];
+      const usersInRoom = getUsersInRoom(room);
+      io.to(room).emit('roomData', { room, users: usersInRoom });
     }
   });
 });
