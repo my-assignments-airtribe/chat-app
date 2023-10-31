@@ -30,9 +30,8 @@ io.on('connection', (socket) => {
     users[socket.id] = { username, room };
     socket.join(room);
     console.log(`${username} joined room: ${room}`);
-    const usersInRoom = getUsersInRoom(room);
-    io.to(room).emit('roomData', { room, users: usersInRoom });
     socket.to(room).emit('message', { username: 'Admin', message: `${username} has joined the room.` });
+    io.in(room).emit('roomData', { room, users: getUsersInRoom(room) });
   });
 
   socket.on('message', ({ room, message, username }: ChatMessage) => {
@@ -48,7 +47,7 @@ io.on('connection', (socket) => {
       console.log(`${username} has disconnected`);
       delete users[socket.id];
       const usersInRoom = getUsersInRoom(room);
-      io.to(room).emit('roomData', { room, users: usersInRoom });
+      io.in(room).emit('roomData', { room, users: getUsersInRoom(room) });
     }
   });
 });
