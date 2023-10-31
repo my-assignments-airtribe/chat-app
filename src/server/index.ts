@@ -6,17 +6,29 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+interface JoinRoomData {
+  room: string;
+  username: string;
+}
+
+interface ChatMessage {
+  room: string;
+  message: string;
+  username: string;
+}
+
 io.on('connection', (socket) => {
   console.log('a user connected');
 
-  socket.on('join', (room) => {
-    console.log('user joined room:', room);
+  socket.on('join', ({ room, username }: JoinRoomData) => {
     socket.join(room);
+    console.log(`${username} joined room: ${room}`);
+    socket.to(room).emit('message', { username: 'Admin', message: `${username} has joined the room.` });
   });
 
-  socket.on('message', (message) => {
-    console.log('message:', message);
-    io.to(message.room).emit('message', message);
+  socket.on('message', ({ room, message, username }: ChatMessage) => {
+    io.to(room).emit('message', { username, message });
+    console.log(`Message from ${username} in room ${room}: ${message}`);
   });
 
   socket.on('disconnect', () => {
