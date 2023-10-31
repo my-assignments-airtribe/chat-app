@@ -19,6 +19,12 @@ const JoinRoom:React.FC<JoinRoomProps> = ({
   handleJoinRoom
 }) => {
 
+  const handleKeyDown = debounce((event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      handleJoinRoom();
+    }
+  });
+
   return (
     <div>
         <h1>Join a Chat Room</h1>
@@ -33,6 +39,7 @@ const JoinRoom:React.FC<JoinRoomProps> = ({
           placeholder="Enter your username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
         <button onClick={handleJoinRoom} disabled={!room || !username}>Join</button>
       </div>

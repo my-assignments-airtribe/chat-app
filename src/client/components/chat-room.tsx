@@ -3,27 +3,35 @@
 import React, { useState, useEffect } from "react";
 import socket from "./socket";
 import JoinRoom from "./join-room";
+import Chat from "./chat";
 
-interface Message {
+export interface Message {
   username: string;
   message: string;
 }
 
+export interface User {
+  username: string;
+  id: string;
+}
 
 const ChatRoom: React.FC = () => {
   const [room, setRoom] = useState<string>("");
   const [username, setUsername] = useState<string>("");
-  const [currentMessage, setCurrentMessage] = useState<string>("");
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [joined, setJoined] = useState<boolean>(false);
+  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
 
   const rooms = ["Engineering", "Product", "Testing", "Support"];
 
   useEffect(() => {
     if (room && username) {
-
       socket.on("message", (message: Message) => {
         setMessages((prevMessages) => [...prevMessages, message]);
+      });
+      socket.on("roomData", ({ users }: { users: User[] }) => {
+        setOnlineUsers(users);
       });
     }
 
@@ -32,12 +40,7 @@ const ChatRoom: React.FC = () => {
     };
   }, [room, username]);
 
-  const sendMessage = () => {
-    if (currentMessage.trim()) {
-      socket.emit("message", { room, message: currentMessage, username });
-      setCurrentMessage("");
-    }
-  };
+  
 
   const handleJoinRoom = () => {
     if (room && username) {
@@ -45,6 +48,7 @@ const ChatRoom: React.FC = () => {
       setJoined(true);
     }
   };
+  
 
   if (!joined) {
     return (
@@ -60,25 +64,12 @@ const ChatRoom: React.FC = () => {
   }
 
   return (
-    <div>
-      <h1>Chat Room: {room}</h1>
-      <div>
-        {messages.map((msg, index) => (
-          <div key={index}>
-            <strong>{msg.username}: </strong>
-            <span>{msg.message}</span>
-          </div>
-        ))}
-      </div>
-      <input
-        type="text"
-        value={currentMessage}
-        onChange={(e) => setCurrentMessage(e.target.value)}
-        onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-        placeholder="Write a message..."
-      />
-      <button onClick={sendMessage}>Send</button>
-    </div>
+    <Chat
+      messages={messages}
+      onlineUsers={onlineUsers}
+      room={room}
+      username={username}
+    />
   );
 };
 
