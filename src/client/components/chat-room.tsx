@@ -34,6 +34,7 @@ const ChatRoom: React.FC = () => {
   const [userId, setUserId] = useState<string>("");
 
   const rooms = ["Engineering", "Product", "Testing", "Support"];
+  
 
   useEffect(() => {
     if (room && username) {

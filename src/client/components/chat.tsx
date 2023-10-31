@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import socket from "./socket";
 import { debounce } from "lodash";
 import { Message, PrivateMessage, User } from "./chat-room";
-import {DateTime} from 'luxon';
+import { DateTime } from "luxon";
+import FileDisplay from "./file-display";
 
 interface ChatProps {
   room: string;
@@ -29,6 +30,7 @@ const Chat: React.FC<ChatProps> = ({
 }) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [recipientId, setRecipientId] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
 
   const sendMessage = useCallback(() => {
     if (currentMessage.trim()) {
@@ -42,14 +44,14 @@ const Chat: React.FC<ChatProps> = ({
     }
   }, [currentMessage, room, username]);
 
-  const handleKeyDown = useCallback(
-    debounce((event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === "Enter") {
-        sendMessage();
-      }
-    }),
-    [sendMessage]
-  );
+  // const handleKeyDown = useCallback(
+  //   debounce((event: React.KeyboardEvent<HTMLInputElement>) => {
+  //     if (event.key === "Enter") {
+  //       sendMessage();
+  //     }
+  //   }),
+  //   [sendMessage]
+  // );
 
   const sendPrivateMessage = useCallback(
     (content: string) => {
@@ -70,6 +72,38 @@ const Chat: React.FC<ChatProps> = ({
     [currentMessage, sendPrivateMessage]
   );
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const sendFile = async ({
+    file,
+    room,
+    username,
+    userId,
+  }: {
+    file: File;
+    room: string;
+    username: string;
+    userId: string;
+  }) => {
+    console.log("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("room", room);
+    formData.append("username", username);
+    formData.append("userId", userId);
+
+    const response = await fetch(`${process.env.REACT_APP_SERVER_URL}upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (response.ok) {
+      console.log("File uploaded successfully.");
+    } else {
+      console.log("File upload failed.");
+    }
+  };
+
   // const messageBubbleClassNames = useCallback(
   //   (message: Message) => {
   //     if (message.username === "Admin") {
@@ -89,11 +123,14 @@ const Chat: React.FC<ChatProps> = ({
     ...privateMessages.map((message) => ({ message })),
   ].sort((a, b) => {
     if ("timestamp" in a.message && "timestamp" in b.message) {
-      return new Date(a.message.timestamp).getTime() - new Date(b.message.timestamp).getTime();
+      return (
+        new Date(a.message.timestamp).getTime() -
+        new Date(b.message.timestamp).getTime()
+      );
     }
     return 0;
-  })
-  
+  });
+
   return (
     <div className="chat-container">
       <div className="heading">
@@ -106,7 +143,9 @@ const Chat: React.FC<ChatProps> = ({
           <ul>
             {onlineUsers.map((user) => (
               <li
-                className={recipientId === user.userId ? "selected-private-message" : ""}
+                className={
+                  recipientId === user.userId ? "selected-private-message" : ""
+                }
                 onClick={() =>
                   recipientId
                     ? setRecipientId("")
@@ -114,52 +153,81 @@ const Chat: React.FC<ChatProps> = ({
                 }
                 key={user.userId} // Use a unique identifier as the key
               >
-                {recipientId === user.userId ? 'Messaging Private : ' : '' }{user.username}
+                {recipientId === user.userId ? "Messaging Private : " : ""}
+                {user.username}
               </li>
             ))}
           </ul>
         </div>
         <div className="chat-messages">
-          {
-            combinedMessages.map((combined, index) => {
-              if ("username" in combined.message && combined.message.username === "Admin") {
-                return (
-                  <div className="admin-user message-bubble" key={index}>
-                    <strong>{combined.message.username} </strong>
-                    <span>{combined.message.message}</span>
-                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
-                  </div>
-                );
-              }
-              if ("username" in combined.message && username === combined.message.username && combined.message.userId === userId) {
-                return (
-                  <div className={`current-user message-bubble`} key={index}>
-                    <strong>{combined.message.username} </strong>
-                    <span>{combined.message.message}</span>
-                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
-                  </div>
-                );
-              }
-              if ("username" in combined.message && username !== combined.message.username && combined.message.userId !== userId) {
-                return (
-                  <div className={`other-user message-bubble`} key={index}>
-                    <strong>{combined.message.username} </strong>
-                    <span>{combined.message.message}</span>
-                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
-                  </div>
-                );
-              }
-              if ("fromUsername" in combined.message) {
-                return (
-                  <div className="private message-bubble" key={index}>
-                    <strong>Private Message from: {combined.message.fromUsername} </strong>
-                    <span>{combined.message.content}</span>
-                    <span className="small">{DateTime.fromISO(combined.message.timestamp).toFormat("HH:mm")}</span>
-                  </div>
-                );
-              }
+          {combinedMessages.map((combined, index) => {
+            if (
+              "username" in combined.message &&
+              combined.message.username === "Admin"
+            ) {
+              return (
+                <div className="admin-user message-bubble" key={index}>
+                  <strong>{combined.message.username} </strong>
+                  <span>{combined.message.message}</span>
+                  <span className="small">
+                    {DateTime.fromISO(combined.message.timestamp).toFormat(
+                      "HH:mm"
+                    )}
+                  </span>
+                </div>
+              );
             }
-          )}
+            if (
+              "username" in combined.message &&
+              username === combined.message.username &&
+              combined.message.userId === userId
+            ) {
+              return (
+                <div className={`current-user message-bubble`} key={index}>
+                  <strong>{combined.message.username} </strong>
+                  <span>{combined.message.message}</span>
+                  <span className="small">
+                    {DateTime.fromISO(combined.message.timestamp).toFormat(
+                      "HH:mm"
+                    )}
+                  </span>
+                </div>
+              );
+            }
+            if (
+              "username" in combined.message &&
+              username !== combined.message.username &&
+              combined.message.userId !== userId
+            ) {
+              return (
+                <div className={`other-user message-bubble`} key={index}>
+                  <strong>{combined.message.username} </strong>
+                  <span>{combined.message.message}</span>
+                  <span className="small">
+                    {DateTime.fromISO(combined.message.timestamp).toFormat(
+                      "HH:mm"
+                    )}
+                  </span>
+                </div>
+              );
+            }
+            if ("fromUsername" in combined.message) {
+              return (
+                <div className="private message-bubble" key={index}>
+                  <strong>
+                    Private Message from: {combined.message.fromUsername}{" "}
+                  </strong>
+                  <span>{combined.message.content}</span>
+                  <span className="small">
+                    {DateTime.fromISO(combined.message.timestamp).toFormat(
+                      "HH:mm"
+                    )}
+                  </span>
+                </div>
+              );
+            }
+          })}
+          <FileDisplay userId={userId} />
         </div>
       </div>
       {recipientId ? (
@@ -178,16 +246,45 @@ const Chat: React.FC<ChatProps> = ({
           </button>
         </div>
       ) : (
-        <div className="footer">
+        <form
+          className="footer"
+          onSubmit={(e) => {
+            // limit file size to 5MB
+            // if (file && file.size > 5242880) {
+            //   alert("File size too large. Maximum file size is 5MB.");
+            //   // Clear the file input
+            //   if (fileInputRef.current) {
+            //     fileInputRef.current.value = "";
+            //   }
+            //   return true;
+            // }
+            e.preventDefault();
+            sendMessage();
+            if (file) {
+              sendFile({ file, room, username, userId });
+            }
+            // Clear the file input
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }}
+        >
           <input
             type="text"
             value={currentMessage}
             onChange={(e) => setCurrentMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
+            // onKeyDown={handleKeyDown}
             placeholder="Break the ice..."
           />
-          <button onClick={sendMessage}>Send</button>
-        </div>
+          <input
+            type="file"
+            onChange={(e) => {
+              e.target.files && setFile(e.target.files[0]);
+            }}
+            ref={fileInputRef} // Reference to the file input element
+          />
+          <button type="submit">Send</button>
+        </form>
       )}
     </div>
   );

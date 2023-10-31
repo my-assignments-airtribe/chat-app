@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
+import multer from "multer";
 
 const app = express();
 const server = http.createServer(app);
@@ -33,6 +34,33 @@ const getUsersInRoom = (room: string): JoinRoomData[] => {
   return usersInRoom;
 };
 
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+app.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) {
+    res.status(400).send("No file uploaded.");
+  } else {
+    if (!req.body.room) {
+      res.status(400).send("No room provided.");
+    }
+    if (!req.body.username) {
+      res.status(400).send("No username provided.");
+    }
+    const timestamp = new Date().toISOString();
+    io.in(req.body.room).emit("file", {
+      filename: req.file.originalname,
+      data: req.file.buffer,
+      username: req.body.username,
+      userId: req.body.userId,
+      timestamp,
+    });
+
+    console.log(req.file);
+    res.status(201).send("File uploaded successfully.");
+  }
+});
+
 io.on("connection", (socket) => {
   console.log("a user connected:", socket.id);
 
@@ -46,7 +74,7 @@ io.on("connection", (socket) => {
     socket.to(room).emit("message", {
       username: "Admin",
       message: `${username} has joined the room.`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     io.in(room).emit("roomData", { room, users: getUsersInRoom(room) });
   });
@@ -86,7 +114,7 @@ io.on("connection", (socket) => {
     socket.to(room).emit("message", {
       username: "Admin",
       message: `${username} has left the room.`,
-      timestamp
+      timestamp,
     });
     delete users[socket.id];
     io.in(room).emit("roomData", { room, users: getUsersInRoom(room) });
@@ -100,7 +128,7 @@ io.on("connection", (socket) => {
       socket.to(room).emit("message", {
         username: "Admin",
         message: `${username} has left the chat.`,
-        timestamp
+        timestamp,
       });
       console.log(`${username} has disconnected`);
       delete users[socket.id];
