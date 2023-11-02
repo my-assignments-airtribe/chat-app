@@ -184,7 +184,7 @@ const Chat: React.FC<ChatProps> = ({
             ) {
               return (
                 <div className={`current-user message-bubble`} key={index}>
-                  <strong>{combined.message.username} </strong>
+                  {/* <strong>{combined.message.username} </strong> */}
                   <span>{combined.message.message}</span>
                   <span className="small">
                     {DateTime.fromISO(combined.message.timestamp).toFormat(
@@ -214,7 +214,7 @@ const Chat: React.FC<ChatProps> = ({
             if ("fromUsername" in combined.message && combined.message.fromUserId === userId) {
               return (
                 <div className="current-user private message-bubble" key={index}>
-                  <span>{combined.message.content}</span>
+                  {/* <span>{combined.message.content}</span> */}
                   <span className="small">
                     {DateTime.fromISO(combined.message.timestamp).toFormat(
                       "HH:mm"
