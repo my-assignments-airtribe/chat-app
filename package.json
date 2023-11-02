@@ -1,5 +1,10 @@
 {
   "name": "chat-app",
+  "version": "1.0.0",
+  "description": "Real time chat application",
+  "main": "app.ts",
+  "author": "Ashrith Prakash",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "lodash": "^4.17.21",
