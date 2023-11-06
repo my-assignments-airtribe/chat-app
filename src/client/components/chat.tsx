@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import socket from "./socket";
-import { debounce } from "lodash";
+import { debounce, set } from "lodash";
 import { Message, PrivateMessage, User } from "./chat-room";
 import { DateTime } from "luxon";
 import FileDisplay from "./file-display";
@@ -13,6 +13,7 @@ interface ChatProps {
   handleLeaveRoom: () => void;
   privateMessages: PrivateMessage[];
   userId: string;
+  fileMessages: Message[];
 }
 
 interface CombinedMessageProps {
@@ -27,6 +28,7 @@ const Chat: React.FC<ChatProps> = ({
   handleLeaveRoom,
   privateMessages,
   userId,
+  fileMessages
 }) => {
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [recipientId, setRecipientId] = useState<string>("");
@@ -99,24 +101,19 @@ const Chat: React.FC<ChatProps> = ({
 
     if (response.ok) {
       console.log("File uploaded successfully.");
+      const { fileUrl } = await response.json();
+      socket.emit("message", {
+        room,
+        message: fileUrl, // Send the file URL as the message content
+        username,
+        userId,
+        timestamp: new Date().toISOString(), // Send the current timestamp
+      });
+      setFile(null);
     } else {
       console.log("File upload failed.");
     }
   };
-
-  // const messageBubbleClassNames = useCallback(
-  //   (message: Message) => {
-  //     if (message.username === "Admin") {
-  //       return "admin-user message-bubble";
-  //     }
-  //     if (username === message.username && message.socketId === userId) {
-  //       return `current-user message-bubble`;
-  //     } else {
-  //       return `other-user message-bubble`;
-  //     }
-  //   },
-  //   [username, userId]
-  // );
 
   const combinedMessages: CombinedMessageProps[] = [
     ...messages.map((message) => ({ message })),

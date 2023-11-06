@@ -19,6 +19,8 @@
     width: 60%;
     max-width: 100%;
     z-index: 1000;
+    max-height: 80vh;
+    overflow-y: auto;
     .close {
       position: absolute;
       top: -13px;

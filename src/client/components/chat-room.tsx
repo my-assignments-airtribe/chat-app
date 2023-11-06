@@ -23,6 +23,11 @@ export interface User {
   room: string;
 }
 
+export function isFileUrl(url: string) {
+  const fileUrlPattern = /\.(jpeg|jpg|gif|png|svg|pdf|doc|docx)$/i;
+  return fileUrlPattern.test(url);
+}
+
 const ChatRoom: React.FC = () => {
   const [room, setRoom] = useState<string>("");
   const [username, setUsername] = useState<string>("");
@@ -30,16 +35,22 @@ const ChatRoom: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [joined, setJoined] = useState<boolean>(false);
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
+  const [fileMessages, setFileMessages] = useState<Message[]>([]);
 
   const [userId, setUserId] = useState<string>("");
 
   const rooms = ["Engineering", "Product", "Testing", "Support"];
-  
 
   useEffect(() => {
     if (room && username) {
       socket.on("message", (message: Message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
+        if (isFileUrl(message.message)) {
+          setFileMessages((prevMessages: Message[]) => [
+            ...prevMessages,
+            message,
+          ]);
+        }
+        setMessages((prevMessages: Message[]) => [...prevMessages, message]);
       });
       socket.on("roomData", ({ users }: { users: User[] }) => {
         setOnlineUsers(users);
@@ -52,30 +63,27 @@ const ChatRoom: React.FC = () => {
   }, [room, username]);
 
   useEffect(() => {
-    if(room && username) {
-      socket.on('private message', (message: PrivateMessage) => {
-        console.log('private message', message)
+    if (room && username) {
+      socket.on("private message", (message: PrivateMessage) => {
+        console.log("private message", message);
         setPrivateMessages((prevMessages) => [...prevMessages, message]);
       });
     }
     return () => {
-      socket.off('private message');
-    };
-  }, [room , username]);
-
-  useEffect(() => {
-    if(room && username) {
-      socket.on('currentUser', ({userId}: {userId: string}) => {
-        setUserId(userId);
-      })
-    }
-    return () => {
-      socket.off('currentUser');
+      socket.off("private message");
     };
   }, [room, username]);
-  
 
-  
+  useEffect(() => {
+    if (room && username) {
+      socket.on("currentUser", ({ userId }: { userId: string }) => {
+        setUserId(userId);
+      });
+    }
+    return () => {
+      socket.off("currentUser");
+    };
+  }, [room, username]);
 
   const handleJoinRoom = () => {
     if (room && username) {
@@ -89,8 +97,7 @@ const ChatRoom: React.FC = () => {
     setJoined(false);
     setRoom("");
     setUsername("");
-  }
-  
+  };
 
   if (!joined) {
     return (
@@ -108,6 +115,7 @@ const ChatRoom: React.FC = () => {
   return (
     <Chat
       messages={messages}
+      fileMessages={fileMessages}
       privateMessages={privateMessages}
       onlineUsers={onlineUsers}
       room={room}

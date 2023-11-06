@@ -76,9 +76,42 @@
         padding: 8px;
         background: #25405f;
         border-radius: 4px;
+        align-self: flex-start;
         img {
           width: 100%;
           object-fit: contain;
+        }
+        &.current-user {
+          align-self: flex-end;
+          background: #81c264;
+          color: #25405f;
+          font-weight: 500;
+          position: relative;
+          &:after {
+            content: "";
+          position: absolute;
+          bottom: 10px;
+          right: -2px;
+          width: 0;
+          height: 0;
+          z-index: 1;
+          border: 8px solid transparent;
+          border-top-color: #81c264;
+          border-bottom: 0;
+          border-right: 0;
+          margin-bottom: -8px;
+          transform: rotate(51deg);
+          }
+        }
+      }
+      .pdf-upload  {
+        max-width: 200px;
+        padding: 8px;
+        background: #25405f;
+        border-radius: 4px;
+        align-self: flex-start;
+        img {
+          width: 64px;
         }
         &.current-user {
           align-self: flex-end;
@@ -250,4 +283,8 @@
       }
     }
   }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
