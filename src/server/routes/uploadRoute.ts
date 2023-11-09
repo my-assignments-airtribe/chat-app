@@ -5,28 +5,31 @@ import { io } from '../server';
 const router = Router();
 
 router.post('/upload', upload.single('file'), (req, res) => {
+  // Check for the existence of the file, room, and username in the request
   if (!req.file) {
-    res.status(400).send("No file uploaded.");
-  } else {
-    if (!req.body.room) {
-      res.status(400).send("No room provided.");
-    }
-    if (!req.body.username) {
-      res.status(400).send("No username provided.");
-    }
-    const timestamp = new Date().toISOString();
-    io.in(req.body.room).emit("file", {
-      filename: req.file.originalname,
-      data: req.file.buffer,
-      username: req.body.username,
-      userId: req.body.userId,
-      timestamp,
-    });
-
-    console.log(req.file);
-    res.status(201).send("File uploaded successfully.");
+    return res.status(400).send("No file uploaded.");
   }
-});
+  if (!req.body.room) {
+    return res.status(400).send("No room provided.");
+  }
+  if (!req.body.username) {
+    return res.status(400).send("No username provided.");
+  }
 
+  // Construct the URL for the uploaded file
+  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`; 
+
+  // Emit the file information to all clients in the room
+  io.in(req.body.room).emit("file", {
+    filename: req.file.filename, 
+    fileUrl, // Send file URL
+    username: req.body.username,
+    userId: req.body.userId,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Respond with the file URL
+  res.status(201).json({ fileUrl }); // Combine the response here
+});
 
 export default router;

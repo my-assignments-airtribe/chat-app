@@ -3,6 +3,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from "cors";
 import uploadRoute from './routes/uploadRoute';
+import path from 'path';
 
 const app = express();
 const server = http.createServer(app);
@@ -14,5 +15,6 @@ const io = new Server(server, {
   },
 });
 app.use(uploadRoute);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 export { app, server, io };

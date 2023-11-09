@@ -8,6 +8,7 @@ export interface Message {
   message: string;
   userId: string;
   timestamp: string;
+  messageType: string;
 }
 
 export interface PrivateMessage {
@@ -15,6 +16,7 @@ export interface PrivateMessage {
   fromUserId: string;
   fromUsername: string;
   timestamp: string;
+  messageType: string;
 }
 
 export interface User {
@@ -47,10 +49,17 @@ const ChatRoom: React.FC = () => {
         if (isFileUrl(message.message)) {
           setFileMessages((prevMessages: Message[]) => [
             ...prevMessages,
-            message,
+            {
+              ...message,
+              messageType: "file"
+            }
           ]);
+        } else {
+          setMessages((prevMessages: Message[]) => [...prevMessages, {
+            ...message,
+            messageType: message.username.toLocaleLowerCase() === "admin" ? "admin" : "public"
+          }]);
         }
-        setMessages((prevMessages: Message[]) => [...prevMessages, message]);
       });
       socket.on("roomData", ({ users }: { users: User[] }) => {
         setOnlineUsers(users);
@@ -66,7 +75,10 @@ const ChatRoom: React.FC = () => {
     if (room && username) {
       socket.on("private message", (message: PrivateMessage) => {
         console.log("private message", message);
-        setPrivateMessages((prevMessages) => [...prevMessages, message]);
+        setPrivateMessages((prevMessages) => [...prevMessages, {
+          ...message,
+          messageType: "private"
+        }]);
       });
     }
     return () => {

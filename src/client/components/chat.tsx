@@ -4,6 +4,7 @@ import { debounce, set } from "lodash";
 import { Message, PrivateMessage, User } from "./chat-room";
 import { DateTime } from "luxon";
 import FileDisplay from "./file-display";
+import DisplayMessage from "./display-message";
 
 interface ChatProps {
   room: string;
@@ -16,7 +17,7 @@ interface ChatProps {
   fileMessages: Message[];
 }
 
-interface CombinedMessageProps {
+export interface CombinedMessageProps {
   message: Message | PrivateMessage;
 }
 
@@ -87,7 +88,6 @@ const Chat: React.FC<ChatProps> = ({
     username: string;
     userId: string;
   }) => {
-    console.log("file", file);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("room", room);
@@ -118,6 +118,7 @@ const Chat: React.FC<ChatProps> = ({
   const combinedMessages: CombinedMessageProps[] = [
     ...messages.map((message) => ({ message })),
     ...privateMessages.map((message) => ({ message })),
+    ...fileMessages.map((message) => ({ message })),
   ].sort((a, b) => {
     if ("timestamp" in a.message && "timestamp" in b.message) {
       return (
@@ -158,85 +159,8 @@ const Chat: React.FC<ChatProps> = ({
         </div>
         <div className="chat-messages">
           {combinedMessages.map((combined, index) => {
-            if (
-              "username" in combined.message &&
-              combined.message.username === "Admin"
-            ) {
-              return (
-                <div className="admin-user message-bubble" key={index}>
-                  <strong>{combined.message.username} </strong>
-                  <span>{combined.message.message}</span>
-                  <span className="small">
-                    {DateTime.fromISO(combined.message.timestamp).toFormat(
-                      "HH:mm"
-                    )}
-                  </span>
-                </div>
-              );
-            }
-            if (
-              "username" in combined.message &&
-              username === combined.message.username &&
-              combined.message.userId === userId
-            ) {
-              return (
-                <div className={`current-user message-bubble`} key={index}>
-                  {/* <strong>{combined.message.username} </strong> */}
-                  <span>{combined.message.message}</span>
-                  <span className="small">
-                    {DateTime.fromISO(combined.message.timestamp).toFormat(
-                      "HH:mm"
-                    )}
-                  </span>
-                </div>
-              );
-            }
-            if (
-              "username" in combined.message &&
-              username !== combined.message.username &&
-              combined.message.userId !== userId
-            ) {
-              return (
-                <div className={`other-user message-bubble`} key={index}>
-                  <strong>{combined.message.username} </strong>
-                  <span>{combined.message.message}</span>
-                  <span className="small">
-                    {DateTime.fromISO(combined.message.timestamp).toFormat(
-                      "HH:mm"
-                    )}
-                  </span>
-                </div>
-              );
-            }
-            if ("fromUsername" in combined.message && combined.message.fromUserId === userId) {
-              return (
-                <div className="current-user private message-bubble" key={index}>
-                  {/* <span>{combined.message.content}</span> */}
-                  <span className="small">
-                    {DateTime.fromISO(combined.message.timestamp).toFormat(
-                      "HH:mm"
-                    )}
-                  </span>
-                </div>
-              );
-            }
-            if ("fromUsername" in combined.message && combined.message.fromUserId !== userId) {
-              return (
-                <div className="other-user private message-bubble" key={index}>
-                  <strong>
-                    Private Message from: {combined.message.fromUsername}{" "}
-                  </strong>
-                  <span>{combined.message.content}</span>
-                  <span className="small">
-                    {DateTime.fromISO(combined.message.timestamp).toFormat(
-                      "HH:mm"
-                    )}
-                  </span>
-                </div>
-              );
-            }
+            return <DisplayMessage key={index} message={combined} userId={userId} username={username} />
           })}
-          <FileDisplay userId={userId} />
         </div>
       </div>
       {recipientId ? (

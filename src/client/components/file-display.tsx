@@ -2,45 +2,33 @@ import React, { useEffect, useState } from "react";
 import socket from "./socket";
 import Modal from "./modal";
 import { Document, Page, pdfjs } from "react-pdf";
+import { Message } from "./chat-room";
+import { DateTime } from "luxon";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const FileDisplay: React.FC<{
   userId: string;
-}> = ({ userId }) => {
-  const [file, setFile] = useState<File | Blob>();
+  message: Message;
+}> = ({ userId, message }) => {
+  const fileUrl = message.message;
   const [fileType, setFileType] = useState("");
-  const [fileUserId, setFileUserId] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [username, setUsername] = useState("");
 
   useEffect(() => {
-    socket.on("file", ({ filename, data, username, timestamp, userId }) => {
-      console.log(filename, data, username, timestamp);
-      setFileUserId(userId);
-      setUsername(username);
-      const blob = new Blob([data]);
-
-      if (
-        filename &&
-        (filename.endsWith(".jpg") ||
-          filename.endsWith(".jpeg") ||
-          filename.endsWith(".png"))
-      ) {
-        setFileType("image");
-      } else if (filename && filename.endsWith(".pdf")) {
-        setFileType("pdf");
-      } else if (
-        filename &&
-        (filename.endsWith(".doc") || filename.endsWith(".docx"))
-      ) {
-        setFileType("document");
-      } else {
-        setFileType("unknown");
-      }
-
-      setFile(blob);
-    });
+    if (fileUrl.endsWith(".pdf")) {
+      setFileType("pdf");
+    } else if (fileUrl.endsWith(".doc") || fileUrl.endsWith(".docx")) {
+      setFileType("document");
+    } else if (
+      fileUrl.endsWith(".jpg") ||
+      fileUrl.endsWith(".jpeg") ||
+      fileUrl.endsWith(".png")
+    ) {
+      setFileType("image");
+    } else {
+      setFileType("unknown");
+    }
 
     window.addEventListener("keydown", handleKeyPress);
 
@@ -48,7 +36,7 @@ const FileDisplay: React.FC<{
       socket.off("file");
       window.removeEventListener("keydown", handleKeyPress);
     };
-  }, []);
+  }, [fileUrl]);
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -69,40 +57,51 @@ const FileDisplay: React.FC<{
       return (
         <div
           className={`${
-            userId === fileUserId ? "current-user" : "other-user"
+            userId === message.userId ? "current-user" : "other-user"
           } image-upload cursor-pointer message-bubble`}
           onClick={openModal}
         >
-          <strong>{ userId === fileUserId ? <></> : username && <p>{username}</p>}</strong>
-          <img src={file && URL.createObjectURL(file)} alt="Received Image" />
+          <strong>
+            {userId === message.userId ? <></> : <p>{message.username}</p>}
+          </strong>
+          <img src={fileUrl} alt="Received Image" />
+          <span className="small">
+            {DateTime.fromISO(message.timestamp).toFormat("HH:mm")}
+          </span>
         </div>
       );
     } else if (fileType === "pdf") {
       return (
         <div
           className={`${
-            userId === fileUserId ? "current-user" : "other-user"
+            userId === message.userId ? "current-user" : "other-user"
           } pdf-upload cursor-pointer message-bubble`}
           onClick={openModal}
         >
-          <strong>{ userId === fileUserId ? <></> : username && <p>{username}</p>}</strong>
+          <strong>
+            {userId === message.userId ? <></> : <p>{message.username}</p>}
+          </strong>
           <img src="https://cdn-icons-png.flaticon.com/512/136/136522.png" />
+          <span className="small">
+            {DateTime.fromISO(message.timestamp).toFormat("HH:mm")}
+          </span>
         </div>
       );
     } else if (fileType === "document") {
       return (
         <div
           className={`${
-            userId === fileUserId ? "current-user" : "other-user"
+            userId === message.userId ? "current-user" : "other-user"
           }} document-upload cursor-pointer message-bubble`}
           onClick={openModal}
         >
-          <strong>{ userId === fileUserId ? <></> : username && <p>{username}</p>}</strong>
-          <iframe
-            src={file && URL.createObjectURL(file)}
-            width="100%"
-            height="500px"
-          ></iframe>
+          <strong>
+            {userId === message.userId ? <></> : <p>{message.username}</p>}
+          </strong>
+          <img src="https://cdn-icons-png.flaticon.com/512/10434/10434857.png" />
+          <span className="small">
+            {DateTime.fromISO(message.timestamp).toFormat("HH:mm")}
+          </span>
         </div>
       );
     } else {
@@ -112,25 +111,21 @@ const FileDisplay: React.FC<{
 
   return (
     <>
-      {file && renderFile()}
+      {fileUrl && renderFile()}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         {/* Render the file content inside the modal */}
         {fileType === "image" ? (
-          <img src={file && URL.createObjectURL(file)} alt="Received Image" />
+          <img src={fileUrl} alt="Received Image" />
         ) : fileType === "pdf" ? (
           <Document
-            file={file && URL.createObjectURL(file)}
+            file={fileUrl}
             onLoadError={(error) => console.error("PDF load error:", error)}
           >
             {/* let the width be 50% of the window */}
             <Page pageNumber={1} width={window.innerWidth / 2} />
           </Document>
         ) : fileType === "document" ? (
-          <iframe
-            src={file && URL.createObjectURL(file)}
-            width="100%"
-            height="500px"
-          ></iframe>
+          <iframe src={fileUrl} width="100%" height="500px"></iframe>
         ) : (
           <p>Unsupported file type</p>
         )}
