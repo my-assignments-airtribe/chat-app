@@ -16,10 +16,10 @@ router.post('/upload', upload.single('file'), (req, res) => {
     return res.status(400).send("No username provided.");
   }
 
-  // Construct the URL for the uploaded file
   const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`; 
 
   // Emit the file information to all clients in the room
+  // Figure out a better way to do this
   io.in(req.body.room).emit("file", {
     filename: req.file.filename, 
     fileUrl, // Send file URL

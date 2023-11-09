@@ -9,6 +9,7 @@ const PrivateMessageComponent: React.FC<{
   if (message.fromUserId === userId) {
     return (
       <div className="current-user private message-bubble">
+        <span>{message.content}</span>
         <span className="small">
           {DateTime.fromISO(message.timestamp).toFormat("HH:mm")}
         </span>
