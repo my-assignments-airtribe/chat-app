@@ -46,6 +46,16 @@ yarn dev
 # or "npm dev" if you are using npm
 ```
 
+### Usage
+
+ - Open http://localhost:3000 in your browser.
+ - Select a chat room from the list.
+ - Enter a username and click "Join Chat".
+ - Start chatting!
+ - Click on a User to send a private message.
+ - Click on the "Upload File" button to share a file with the chat room.
+
+
 The application should now be running on http://localhost:3000.
 
 ## Built With
